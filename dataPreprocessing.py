@@ -36,5 +36,60 @@ for my_gf in abnormals:
 
 writer.close()
 
+
+
+
 # read the tf.records and convert them to tf.data.
-# Pooja if you want/can then you can continue using this.
+import shutil
+
+def _extract_fn(tf_record):
+  features = {
+            'filename': tf.FixedLenFeature([], tf.string),
+            'rows': tf.FixedLenFeature([], tf.int64),
+            'cols': tf.FixedLenFeature([], tf.int64),
+            'channels': tf.FixedLenFeature([], tf.int64),
+            'image': tf.FixedLenFeature([], tf.string),
+            'label': tf.FixedLenFeature([], tf.int64)
+        }
+  
+  sample=tf.parse_single_example(tf_record,features)
+  
+  image = tf.image.decode_image(sample['image']) 
+  img_shape = tf.stack([sample['rows'], sample['cols'], sample['channels']])
+  label = sample['label']
+  filename = sample['filename']
+  
+  return [image, label, filename, img_shape]
+
+import traceback
+
+def extract_image():
+  folder_path = '/content/gdrive/My Drive/ExtractedImages'
+  shutil.rmtree(folder_path, ignore_errors = True)
+  os.mkdir(folder_path)
+  
+  dataset = tf.data.TFRecordDataset([tfrecord_filename])
+  dataset = dataset.map(_extract_fn)
+  iterator = dataset.make_one_shot_iterator()
+  next_element = iterator.get_next()
+  
+  with tf.Session()  as sess:
+    sess.run(tf.global_variables_initializer())
+    
+    try:
+      for i in range(101):
+        image_data = sess.run(next_element)
+                
+        if not np.array_equal(image_data[0].shape, image_data[3]):
+          print('Image {} not decoded properly'.format(image_data[2]))
+          continue
+              
+        save_path = os.path.abspath(
+            os.path.join(folder_path, image_data[2].decode('utf-8')))
+        
+        mpimg.imsave(save_path, image_data[0])
+        print('Save path= ', save_path, 'Label= ', image_data[1])
+      
+    except Exception as e: 
+      traceback.print_exc()
+      print('Except: ',e)
