@@ -17,8 +17,6 @@ drive.mount('/content/gdrive')
 abnormals = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/'
 tfrecord_filename = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/Experimental_Vocal_Images.tfrecords'
 
-print (type(abnormals), len(abnormals))
-
 # create tf records
 def _convert_image(img_path):
   label=0
@@ -44,15 +42,12 @@ def convert_image_folder(img_folder,tfrecord_file_name):
   img_paths = os.listdir(img_folder)
   img_paths = [os.path.abspath(os.path.join(img_folder,i))for i in img_paths]
   
-  
   with tf.python_io.TFRecordWriter(tfrecord_file_name) as writer:
     for img_path in img_paths[:101]:
       example =_convert_image(img_path)
       writer.write(example.SerializeToString())
       
-     
 convert_image_folder(abnormals, tfrecord_filename) 
-
 
 # read the tf.records and convert them to tf.data.
 def _extract_fn(tf_record):
@@ -65,7 +60,7 @@ def _extract_fn(tf_record):
             'label': tf.FixedLenFeature([], tf.int64)
         }
   
-  sample=tf.parse_single_example(tf_record,features)
+  sample = tf.parse_single_example(tf_record,features)
   
   image = tf.image.decode_image(sample['image']) 
   img_shape = tf.stack([sample['rows'], sample['cols'], sample['channels']])
