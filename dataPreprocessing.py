@@ -8,6 +8,8 @@ import glob as glob
 import numpy as np
 from PIL import Image
 from google.colab import drive
+import shutil
+import traceback
 
 drive.mount('/content/gdrive')
 abnormals = glob.glob('/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/*.jpg')
@@ -40,8 +42,6 @@ writer.close()
 
 
 # read the tf.records and convert them to tf.data.
-import shutil
-
 def _extract_fn(tf_record):
   features = {
             'filename': tf.FixedLenFeature([], tf.string),
@@ -60,8 +60,6 @@ def _extract_fn(tf_record):
   filename = sample['filename']
   
   return [image, label, filename, img_shape]
-
-import traceback
 
 def extract_image():
   folder_path = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/ExtractedImages'
