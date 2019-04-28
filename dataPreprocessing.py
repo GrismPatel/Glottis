@@ -64,7 +64,7 @@ def _extract_fn(tf_record):
 import traceback
 
 def extract_image():
-  folder_path = '/content/gdrive/My Drive/ExtractedImages'
+  folder_path = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/ExtractedImages'
   shutil.rmtree(folder_path, ignore_errors = True)
   os.mkdir(folder_path)
   
