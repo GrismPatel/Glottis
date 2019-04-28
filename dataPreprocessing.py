@@ -10,35 +10,48 @@ from PIL import Image
 from google.colab import drive
 import shutil
 import traceback
+import matplotlib.image as mpimg
 
 drive.mount('/content/gdrive')
-abnormals = glob.glob('/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/*.jpg')
+
+abnormals = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/'
+tfrecord_filename = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/Experimental_Vocal_Images.tfrecords'
 
 print (type(abnormals), len(abnormals))
 
-def _int64_feature(value):
-  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-
-
-def _bytes_feature(value):
-  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
-
-
-tfrecord_filename = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/Experimental_Vocal_Images.tfrecords'
-writer = tf.python_io.TFRecordWriter(tfrecord_filename)
-
-for my_gf in abnormals:
-  img = Image.open(my_gf)
-  label = 0
+# create tf records
+def _convert_image(img_path):
+  label=0
+  img_shape = mpimg.imread(img_path).shape
+  filename = os.path.basename(img_path)
   
-  feature = {'label': _int64_feature(label), 'image': _bytes_feature(img.tobytes())}
+  with tf.gfile.GFile(img_path,'rb') as fid:
+    image_data=fid.read()
+    
+  feature = {'filename': tf.train.Feature(bytes_list = tf.train.BytesList(value = [filename.encode('utf-8')])),
+            'rows': tf.train.Feature(int64_list = tf.train.Int64List(value = [img_shape[0]])),
+            'cols': tf.train.Feature(int64_list = tf.train.Int64List(value = [img_shape[1]])),
+            'channels': tf.train.Feature(int64_list = tf.train.Int64List(value = [3])),
+            'image': tf.train.Feature(bytes_list = tf.train.BytesList(value = [image_data])),
+            'label': tf.train.Feature(int64_list = tf.train.Int64List(value = [label])),
+            }
   
   example = tf.train.Example(features=tf.train.Features(feature=feature))
-  writer.write(example.SerializeToString())
+  
+  return example
 
-writer.close()
-
-
+def convert_image_folder(img_folder,tfrecord_file_name):
+  img_paths = os.listdir(img_folder)
+  img_paths = [os.path.abspath(os.path.join(img_folder,i))for i in img_paths]
+  
+  
+  with tf.python_io.TFRecordWriter(tfrecord_file_name) as writer:
+    for img_path in img_paths[:101]:
+      example =_convert_image(img_path)
+      writer.write(example.SerializeToString())
+      
+     
+convert_image_folder(abnormals, tfrecord_filename) 
 
 
 # read the tf.records and convert them to tf.data.
