@@ -11,6 +11,9 @@ from google.colab import drive
 import shutil
 import traceback
 import matplotlib.image as mpimg
+from keras import models, layers
+from tensorflow.python import keras as keras
+import shutil
 import os
 
 drive.mount('/content/gdrive')
@@ -63,12 +66,17 @@ def _extract_fn(tf_record):
   
   sample = tf.parse_single_example(tf_record,features)
   
-  image = tf.image.decode_image(sample['image']) 
+  image = tf.decode_raw(sample['image'],tf.uint8)
+  image = tf.cast(image, tf.float32)
+  
+  label = tf.cast(sample['label'], tf.float32)
+  
   img_shape = tf.stack([sample['rows'], sample['cols'], sample['channels']])
-  label = sample['label']
   filename = sample['filename']
   
-  return [image, label, filename, img_shape]
+  print(type(image),type(label))
+  
+  return [image, label, filename, img_shape]  
 
 def extract_image():
   folder_path = '/content/gdrive/My Drive/Experimental_Vocal_Images/abnormal/ExtractedImages'
@@ -100,3 +108,37 @@ def extract_image():
     except Exception as e: 
       traceback.print_exc()
       print('Except: ',e)
+
+def create_dataset():
+  dataset = tf.data.TFRecordDataset(tfrecord_filename)
+  
+  dataset = dataset.map(_extract_fn)
+  
+  iterator = dataset.make_one_shot_iterator()
+  
+  image_data = iterator.get_next()
+  
+  image = tf.reshape(image_data[0],[1,256,256,1])
+  
+  return image,image_data[1]
+
+# extract_image()
+
+image,label = create_dataset()
+
+# Sequential Implementation  
+# The Sequential model API is great for developing deep learning models in most situations, but it also has some limitations.
+# For example, it is not straightforward to define models that may have:
+# multiple different input sources,
+# produce multiple output destinations, or
+# models that re-use layers.
+
+model = models.Sequential()
+model.add(layers.Conv2D(64, (3, 3), input_shape=(1,256,256,1)))
+
+model.add(layers.Flatten())
+
+model.add(layers.Dense(1))
+
+model.compile(optimizer='adam', loss='mean_squared_error')
+model.fit(image, label)
