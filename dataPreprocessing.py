@@ -110,17 +110,19 @@ def extract_image():
       print('Except: ',e)
 
 def create_dataset():
-  dataset = tf.data.TFRecordDataset(tfrecord_filename)
-  
-  dataset = dataset.map(_extract_fn)
-  
-  iterator = dataset.make_one_shot_iterator()
-  
-  image_data = iterator.get_next()
-  
-  image = tf.reshape(image_data[0],[1,256,256,1])
-  
-  return image,image_data[1]
+	dataset = tf.data.TFRecordDataset(tfrecord_filename)
+	dataset = dataset.map(_extract_fn)
+
+	iterator = dataset.make_one_shot_iterator()
+
+	image_data = iterator.get_next()
+	with tf.Session() as sess:
+    	image_data=sess.run(image_data)
+
+    	print(image_data,len(image_data[0]))
+    	
+    	image = tf.reshape(image_data[0],[-1, 213, 320,   3])
+    	return image,image_data[1]
 
 # extract_image()
 
