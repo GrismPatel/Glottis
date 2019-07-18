@@ -1,0 +1,58 @@
+{
+    "model": "Sequential",
+    "image_width": 32,
+    "image_height": 32,
+    "channels": 3,
+    "first_layer": "first_conv2d",
+    "number_conv": 2,
+    "number_max": 2,
+    "number_dense": 2,
+    "first_conv2d": {
+        "number_kernels": 32,
+        "kernel_width": 3,
+        "kernel_height": 3,
+        "activation": "relu",
+        "kernel_initializer_scale": 2.0,
+        "kernel_regularizer_scale": 1e-4,
+        "next": "first_max"
+    },
+    "second_conv2d": {
+        "number_kernels": 32,
+        "kernel_width": 3,
+        "kernel_height": 3,
+        "activation": "relu",
+        "kernel_initializer_scale": 2.0,
+        "kernel_regularizer_scale": 1e-4,
+        "next": "second_max"
+    },
+     "first_max": {
+        "pool_width": 2,
+        "pool_height": 2,
+        "next": "second_conv2d"
+    },
+    "second_max": {
+        "pool_width": 2,
+        "pool_height": 2,
+        "next": "flatten"
+    },
+    "flatten": {
+        "next": "first_dense"
+    },
+    "first_dense": {
+        "units": 128,
+        "input": "flatten",
+        "activation": "relu",
+        "next": "second_dense"
+    },
+    "second_dense": {
+        "units": 1,
+        "input": "first_dense",
+        "activation": "sigmoid",
+        "next": null
+    },
+    "compile": {
+        "loss": "binary_crossentropy",
+        "optimizer": "adam",
+        "metrics": ["accuracy"]
+    }
+}
