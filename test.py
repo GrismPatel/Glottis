@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import json
 from keras.models import Sequential
 from keras.layers import Conv2D
 from keras.layers import MaxPool2D
 from keras.layers import Flatten
 from keras.layers import Dense
+from keras.utils.vis_utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 
@@ -16,44 +18,46 @@ print (data)
 model = Sequential()
 
 first_layer = data['first_layer']
-print ('First Layer: ', first_layer)
+layer_type = data[first_layer]['type']
+
+print ('Current Layer is {layer} of type: {layer_type}'.format(layer_type = layer_type, layer = first_layer))
 model.add(Conv2D(data[first_layer]['number_kernels'],
                  (data[first_layer]['kernel_width'], data[first_layer]['kernel_height']),
+                 input_shape = (data['image_width'], data['image_height'], data['channels']),
                  activation = data[first_layer]['activation'],
                  kernel_initializer = tf.initializers.variance_scaling(scale= data[first_layer]['kernel_initializer_scale']),
                  kernel_regularizer = tf.contrib.layers.l2_regularizer(scale= data[first_layer]['kernel_regularizer_scale'])))
 
-second_layer = data[first_layer]['next']
-print ('Second Layer: ', second_layer)
-model.add(MaxPool2D(pool_size = (data[second_layer]['pool_width'], data[second_layer]['pool_height'])))
+current_layer = data[first_layer]['next']
+while True:
 
-third_layer = data[second_layer]['next']
-print ('Third Layer: ', third_layer)
-model.add(Conv2D(data[third_layer]['number_kernels'],
-                 (data[third_layer]['kernel_width'], data[third_layer]['kernel_height']),
-                 activation = data[third_layer]['activation'],
-                 kernel_initializer = tf.initializers.variance_scaling(scale= data[third_layer]['kernel_initializer_scale']),
-                 kernel_regularizer = tf.contrib.layers.l2_regularizer(scale= data[third_layer]['kernel_regularizer_scale'])))
+    layer_type = data[current_layer]['type']
+    print ('Current Layer is {layer} of type: {layer_type}'.format(layer_type = layer_type, layer = current_layer))
+    if layer_type == 'conv2d':
+        model.add(Conv2D(data[current_layer]['number_kernels'],
+                         (data[current_layer]['kernel_width'], data[current_layer]['kernel_height']),
+                         activation = data[current_layer]['activation'],
+                         kernel_initializer = tf.initializers.variance_scaling(scale= data[current_layer]['kernel_initializer_scale']),
+                         kernel_regularizer = tf.contrib.layers.l2_regularizer(scale= data[current_layer]['kernel_regularizer_scale'])))
+    
+    if layer_type == 'maxpool2d':
+        model.add(MaxPool2D(pool_size = (data[current_layer]['pool_width'], data[current_layer]['pool_height'])))
 
-fourth_layer = data[third_layer]['next']
-print ('Fourth Layer: ', fourth_layer)
-model.add(MaxPool2D(pool_size = (data[fourth_layer]['pool_width'], data[fourth_layer]['pool_height'])))
+    if layer_type == 'dense':
+        model.add(Dense(units = data[current_layer]['units'],
+                        activation = data[current_layer]['activation']))
 
-fifth_layer = data[fourth_layer]['next']
-print ('Fifth Layer: ', fifth_layer)
-model.add(Flatten())
 
-sixth_layer = data[fifth_layer]['next']
-print ('Sixth Layer: ', sixth_layer)
-model.add(Dense(units = data[sixth_layer]['units'],
-                activation = data[sixth_layer]['activation']))
+    if layer_type == 'flatten':
+        model.add(Flatten())
 
-seventh_layer = data[sixth_layer]['next']
-print ('Seventh Layer: ', seventh_layer)
-model.add(Dense(units = data[seventh_layer]['units'],
-                activation = data[seventh_layer]['activation']))
-
+    current_layer = data[current_layer]['next']
+    
+    if current_layer == None:
+        break
+    
 model.compile(optimizer = data['compile']['optimizer'], loss = data['compile']['loss'], metrics = ['accuracy'])
+plot_model(model, to_file="CNN_Grism.png", show_shapes=True)
 
 train_datagen = ImageDataGenerator(
         rescale=1./255,

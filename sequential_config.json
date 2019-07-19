@@ -4,10 +4,8 @@
     "image_height": 32,
     "channels": 3,
     "first_layer": "first_conv2d",
-    "number_conv": 2,
-    "number_max": 2,
-    "number_dense": 2,
     "first_conv2d": {
+        "type": "conv2d",
         "number_kernels": 32,
         "kernel_width": 3,
         "kernel_height": 3,
@@ -17,6 +15,7 @@
         "next": "first_max"
     },
     "second_conv2d": {
+        "type": "conv2d",
         "number_kernels": 32,
         "kernel_width": 3,
         "kernel_height": 3,
@@ -26,25 +25,30 @@
         "next": "second_max"
     },
      "first_max": {
+        "type": "maxpool2d",
         "pool_width": 2,
         "pool_height": 2,
         "next": "second_conv2d"
     },
     "second_max": {
+        "type": "maxpool2d",
         "pool_width": 2,
         "pool_height": 2,
         "next": "flatten"
     },
     "flatten": {
+        "type": "flatten",
         "next": "first_dense"
     },
     "first_dense": {
+        "type": "dense",
         "units": 128,
         "input": "flatten",
         "activation": "relu",
         "next": "second_dense"
     },
     "second_dense": {
+        "type": "dense",
         "units": 1,
         "input": "first_dense",
         "activation": "sigmoid",
