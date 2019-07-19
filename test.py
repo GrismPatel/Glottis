@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import json
+import tensorflow as tf
+import datetime
+
 from keras.models import Sequential
 from keras.layers import Conv2D
 from keras.layers import MaxPool2D
@@ -9,12 +12,15 @@ from keras.layers import Flatten
 from keras.layers import Dense
 from keras.utils.vis_utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
-import tensorflow as tf
+from keras.callbacks import CSVLogger
+from shutil import copyfile
 
-with open('/Users/grism/Desktop/learning/Glottis/sequential_config.json') as json_file:
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+path = os.getcwd()
+
+with open(path + '/Glottis/sequential_config.json') as json_file:
     data = json.load(json_file)
 
-print (data)
 model = Sequential()
 
 first_layer = data['first_layer']
@@ -29,8 +35,8 @@ model.add(Conv2D(data[first_layer]['number_kernels'],
                  kernel_regularizer = tf.contrib.layers.l2_regularizer(scale= data[first_layer]['kernel_regularizer_scale'])))
 
 current_layer = data[first_layer]['next']
-while True:
 
+while True:
     layer_type = data[current_layer]['type']
     print ('Current Layer is {layer} of type: {layer_type}'.format(layer_type = layer_type, layer = current_layer))
     if layer_type == 'conv2d':
@@ -47,7 +53,6 @@ while True:
         model.add(Dense(units = data[current_layer]['units'],
                         activation = data[current_layer]['activation']))
 
-
     if layer_type == 'flatten':
         model.add(Flatten())
 
@@ -57,7 +62,6 @@ while True:
         break
     
 model.compile(optimizer = data['compile']['optimizer'], loss = data['compile']['loss'], metrics = ['accuracy'])
-plot_model(model, to_file="CNN_Grism.png", show_shapes=True)
 
 train_datagen = ImageDataGenerator(
         rescale=1./255,
@@ -80,9 +84,15 @@ test_set = test_datagen.flow_from_directory(
         batch_size=32,
         class_mode='binary')
 
+result_path = path + '/Glottis/Results/{time}/'.format(time = datetime.datetime.now())
+os.makedirs(result_path)
+plot_model(model, to_file = result_path + 'GlottisCNN.png', show_shapes = True)
+csv_logger = CSVLogger(result_path + 'GlottisCNN.csv', append=True, separator='|')
+copyfile(path + '/Glottis/sequential_config.json', result_path + 'config.json')
+
 model.fit_generator(
         training_set,
         steps_per_epoch=160,
-        epochs=25,
+        epochs=2,
         validation_data=test_set,
         validation_steps=40)
